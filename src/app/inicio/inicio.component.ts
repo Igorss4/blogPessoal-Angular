@@ -35,12 +35,14 @@ export class InicioComponent implements OnInit {
   ngOnInit() {
     window.scroll(0, 0)
 
-    // if (environment.token == '') {
-    //   alert('Voce precisa estar logado para ficar aqui...')
-    //   this.router.navigate(['/entrar'])
-    // }
+    if (environment.token == '') {
+      alert('Voce precisa estar logado para ficar aqui...')
+      this.router.navigate(['/entrar'])
+    }
+    this.auth.refreshToken()
     this.getTemas()
     this.getPostagens()
+
   }
 
   getTemas() {
@@ -62,7 +64,7 @@ export class InicioComponent implements OnInit {
   }
 
   findByIdUsuario(){
-    this.auth.getByIdUsuario(this.idUsuario).subscribe((resp: Usuario)=>{
+    this.auth.findByIdUsuario(this.idUsuario).subscribe((resp: Usuario)=>{
       this.usuario = resp
     })
   }
