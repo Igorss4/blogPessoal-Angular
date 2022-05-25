@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Postagem } from 'src/app/model/Postagem';
 import { Tema } from 'src/app/model/Tema';
+import { AlertasService } from 'src/app/service/alertas.service';
+import { AuthService } from 'src/app/service/auth.service';
 import { PostagemService } from 'src/app/service/postagem.service';
 import { TemaService } from 'src/app/service/tema.service';
 import { environment } from 'src/environments/environment.prod';
@@ -14,13 +16,17 @@ import { environment } from 'src/environments/environment.prod';
 export class PostagemDeleteComponent implements OnInit {
 
   postagem: Postagem = new Postagem()
-
   idPost: number
+
+  listaTemas: Tema[]
 
   constructor(
     private postagemService: PostagemService,
+    private temaService: TemaService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private auth: AuthService,
+    private alertas: AlertasService
   ) { }
 
   ngOnInit(){
@@ -29,21 +35,30 @@ export class PostagemDeleteComponent implements OnInit {
       // alert('Voce precisa estar logado para ficar aqui...')
       this.router.navigate(['/entrar'])
   }
+  this.auth.refreshToken()
+  this.temaService.refreshToken()
+  this.postagemService.refreshToken()
   this.idPost = this.route.snapshot.params['id']
   this.findByIdPostagem(this.idPost)
+  this.getTemas()
 }
   findByIdPostagem(id: number){
-    this.postagemService.getByIdPostagem(id).subscribe((resp: Postagem)=>{
+    this.postagemService.findByIdPostagem(id).subscribe((resp: Postagem)=>{
       this.postagem = resp
+    })
+  }
+
+  getTemas() {
+    this.temaService.getTemas().subscribe((resp: Tema[]) => {
+      this.listaTemas = resp
     })
   }
 
   apagar(){
     this.postagemService.deletePostagem(this.idPost).subscribe(()=>{
-      alert('Postagem apagada com sucesso!')
+      this.alertas.showAlertDanger('Postagem apagada com sucesso!')
       this.router.navigate(['/inicio'])
     })
-
   }
 
 }

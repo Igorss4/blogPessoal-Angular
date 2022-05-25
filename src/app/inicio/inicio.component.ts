@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { environment } from 'src/environments/environment.prod';
 import { Postagem } from '../model/Postagem';
 import { Tema } from '../model/Tema';
 import { Usuario } from '../model/Usuario';
+import { AlertasService } from '../service/alertas.service';
 import { AuthService } from '../service/auth.service';
 import { PostagemService } from '../service/postagem.service';
 import { TemaService } from '../service/tema.service';
@@ -15,6 +16,8 @@ import { TemaService } from '../service/tema.service';
 })
 export class InicioComponent implements OnInit {
 
+  idUsuario = environment.id
+
   listaPostagens: Postagem[]
   postagem: Postagem = new Postagem()
 
@@ -23,25 +26,31 @@ export class InicioComponent implements OnInit {
   idTema: number
 
   usuario: Usuario = new Usuario()
-  idUsuario = environment.id
 
   constructor(
     private router: Router,
     private postagemService: PostagemService,
     private temaService: TemaService,
-    private auth: AuthService
+    public auth: AuthService,
+    private alertas: AlertasService,
+    private route: ActivatedRoute,
   ) { }
 
   ngOnInit() {
     window.scroll(0, 0)
 
     if (environment.token == '') {
-      alert('Voce precisa estar logado para ficar aqui...')
+      this.alertas.showAlertDanger('Voce precisa estar logado para ficar aqui...')
       this.router.navigate(['/entrar'])
     }
+    let id = this.route.snapshot.params['id']
+    
     this.auth.refreshToken()
-    this.getTemas()
+    this.temaService.refreshToken()
+    this.postagemService.refreshToken()
+
     this.getPostagens()
+    this.getTemas()
 
   }
 
@@ -62,25 +71,49 @@ export class InicioComponent implements OnInit {
       this.listaPostagens = resp
     })
   }
+  findByIdPostagem(id: number) {
+    this.postagemService.findByIdPostagem(id).subscribe((resp: Postagem) => {
+      this.postagem = resp
+    })
+  }
 
   findByIdUsuario(){
-    this.auth.findByIdUsuario(this.idUsuario).subscribe((resp: Usuario)=>{
+    this.auth.findByIdUsuario().subscribe((resp: Usuario)=>{
       this.usuario = resp
     })
   }
 
-  publicar() {
+  atualizar() {
     this.tema.id = this.idTema
     this.postagem.tema = this.tema
 
-    this.usuario.id = this.idUsuario
+    this.postagemService.putPostagem(this.postagem).subscribe((resp: Postagem) => {
+      this.postagem = resp
+      this.alertas.showAlertSuccess('Postagem atualizado com sucesso!')
+      this.router.navigate(['/inicio'])
+    })
+  }
+
+  publicar() {
+    this.postagemService.refreshToken()
+    this.tema.id = this.idTema
+    this.postagem.tema = this.tema
+
+    this.usuario.id = this.auth.idUsuario
     this.postagem.usuario = this.usuario
 
     this.postagemService.postPostagem(this.postagem).subscribe((resp: Postagem) => {
       this.postagem = resp
-      alert('Postagem realizada com sucesso!')
+      this.alertas.showAlertSuccess('Postagem realizada com sucesso!')
       this.postagem = new Postagem()
       this.getPostagens()
+    })
+  }
+
+  apagar(){
+    this.postagemService.deletePostagem(this.postagem.id).subscribe(()=>{
+      this.alertas.showAlertSuccess('Postagem apagada com sucesso!')
+      this.router.navigate(['/inicio'])
     })
   }
 

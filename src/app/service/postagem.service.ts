@@ -15,19 +15,21 @@ export class PostagemService {
   token = {
     headers: new HttpHeaders().set('Authorization', environment.token)
   }
+  refreshToken() {
+    this.token = {
+      headers: new HttpHeaders().set('Authorization', environment.token)
+    }
+  }
 
   getPostagem(): Observable<Postagem[]> {
     return this.http.get<Postagem[]>('http://localhost:8080/postagens', this.token)
   }
-
-  getByIdPostagem(id: number): Observable<Postagem> {
+  findByIdPostagem(id: number): Observable<Postagem> {
     return this.http.get<Postagem>(`http://localhost:8080/postagens/${id}`, this.token)
   }
-
   postPostagem(postagem: Postagem): Observable<Postagem> {
     return this.http.post<Postagem>('http://localhost:8080/postagens', postagem, this.token)
   }
-
   putPostagem(postagem: Postagem): Observable<Postagem> {
     return this.http.put<Postagem>('http://localhost:8080/postagens', postagem, this.token)
   }

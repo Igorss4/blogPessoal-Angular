@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Usuario } from 'src/app/model/Usuario';
+import { AlertasService } from 'src/app/service/alertas.service';
 import { AuthService } from 'src/app/service/auth.service';
 import { environment } from 'src/environments/environment.prod';
 
@@ -19,19 +20,19 @@ export class UsuarioEditComponent implements OnInit {
   constructor(
     private auth: AuthService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private alertas: AlertasService
   ) { }
 
   ngOnInit() {
     window.scroll(0, 0)
 
     if (environment.token == '') {
-      // alert('Voce precisa estar logado para ficar aqui...')
       this.router.navigate(['/entrar'])
     }
-
+    this.auth.refreshToken()
     this.idUsuario = this.route.snapshot.params['id']
-    this.findByIdUsuario(this.idUsuario)
+    this.findByIdUsuario()
   }
 
   confirmSenha(event: any) {
@@ -44,11 +45,11 @@ export class UsuarioEditComponent implements OnInit {
 
   atualizar() {
     this.usuario.tipo = this.tipoUsuario
-
+    this.usuario.postagem = []
     if (this.usuario.senha == this.confirmarSenha) {
       this.auth.cadastrar(this.usuario).subscribe((resp: Usuario) => {
         this.usuario = resp
-        alert('Usuario atualizado com sucesso!')
+        this.alertas.showAlertSuccess('Usuario atualizado com sucesso!')
         environment.token = ''
         environment.nome = ''
         environment.foto = ''
@@ -56,13 +57,52 @@ export class UsuarioEditComponent implements OnInit {
         this.router.navigate(['/entrar'])
       })
     } else {
-      alert('Senhas erradas')
+      this.alertas.showAlertDanger('Senhas erradas')
     }
   }
 
-  findByIdUsuario(id: number) {
-    this.auth.findByIdUsuario(id).subscribe((resp: Usuario) => {
+  validaEmailEdit() {
+    let regex = /^\w+([.-]?\w+)@\w+([.-]?\w+)(.\w{2,3})+$/
+
+    if(this.usuario.usuario.match(regex)) {
+      let usuario = (<HTMLDivElement>document.querySelector('#usuarioEdit'))
+      usuario.style.borderColor = 'green';
+      usuario.style.boxShadow = '0 0 1em green';
+    }
+    else{
+      let usuario = (<HTMLDivElement>document.querySelector('#usuarioEdit'))
+      usuario.style.borderColor = 'red';
+      usuario.style.boxShadow = '0 0 1em red';
+    }
+  }
+
+  validaNomeEdit(){
+    let nomeEdit = this.usuario.nome
+    let usuarioNomeEdit = (<HTMLDivElement>document.getElementById('nomeEdit'))
+    if (this.usuario.nome.length > 2) {
+      usuarioNomeEdit.style.borderColor = 'green';
+      usuarioNomeEdit.style.boxShadow = '0 0 1em green';
+
+    } else {
+      usuarioNomeEdit.style.borderColor = 'red';
+      usuarioNomeEdit.style.boxShadow = '0 0 1em red';
+    }
+  }
+
+  findByIdUsuario() {
+    this.auth.findByIdUsuario().subscribe((resp: Usuario) => {
       this.usuario = resp
+    })
+  }
+
+  apagar(){
+    this.auth.deleteUsuario(this.auth.idUsuario).subscribe(()=>{
+      this.alertas.showAlertSuccess('Usuario apagado com sucesso!')
+      this.router.navigate(['/entrar'])
+      environment.token = ''
+    environment.nome = ''
+    environment.foto = ''
+    environment.id = 0
     })
   }
 
